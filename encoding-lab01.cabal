@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fe1f9b9b24ba276a606c1a5f894a6c5c014761a86ad38de17f5691566e1ca9e2
+-- hash: aaba5e4923922cfa5d0108b78c0909c14e86cd7a19c19cf8079ae6a7450cc66b
 
 name:           encoding-lab01
 version:        0.1.0.0
@@ -28,12 +28,17 @@ source-repository head
 library
   exposed-modules:
       Lib
+      My.Arithmetic
+      My.Code
+      My.MatrixUtil
   other-modules:
       Paths_encoding_lab01
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
+    , matrix
+    , vector
   default-language: Haskell2010
 
 executable encoding-lab01-exe
@@ -46,6 +51,8 @@ executable encoding-lab01-exe
   build-depends:
       base >=4.7 && <5
     , encoding-lab01
+    , matrix
+    , vector
   default-language: Haskell2010
 
 test-suite encoding-lab01-test
@@ -59,4 +66,6 @@ test-suite encoding-lab01-test
   build-depends:
       base >=4.7 && <5
     , encoding-lab01
+    , matrix
+    , vector
   default-language: Haskell2010
