@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aaba5e4923922cfa5d0108b78c0909c14e86cd7a19c19cf8079ae6a7450cc66b
+-- hash: b9cf26031723ad1c94502ecc2bad557c1d104286ae1b5c018cea2b2fd9130bc3
 
 name:           encoding-lab01
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       Lib
       My.Arithmetic
       My.Code
+      My.Information
       My.MatrixUtil
   other-modules:
       Paths_encoding_lab01

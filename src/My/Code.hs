@@ -4,6 +4,7 @@
 module My.Code (
   LinearCode(..),
   CodeVector(..),
+  Message(..),
   hammingMeasure,
   hammingDistance,
   allCodeVectors,
