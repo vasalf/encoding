@@ -11,9 +11,10 @@ module My.Code (
   codeDistance,
   encode,
   fromGeneratingMatrix,
+  fromPolynomial,
 ) where
 
-import Control.Monad (forM_)
+import Control.Monad (forM, forM_)
 import Control.Monad.ST
 import Data.List (sort)
 import Data.Matrix
@@ -75,11 +76,10 @@ encode g m = CodeVector $ getCol 0 $ generatingMatrix g * colVector (getMessage 
 invPerm :: [Int] -> [Int]
 invPerm xs = runST $ do
   let xv = V.fromList xs
-  let n = V.length xv
+  let n  = V.length xv
   sv <- MV.new n
-  forM_ [0..n - 1] (\i -> MV.write sv (xv V.! i) i)
-  v <- V.generateM n (MV.read sv)
-  return $ V.toList v
+  forM_ [0..n - 1] $ \i -> MV.write sv (xv V.! i) i
+  forM  [0..n - 1] $ MV.read sv
 
 
 fromGeneratingMatrix :: Matrix Binary -> LinearCode
@@ -103,3 +103,77 @@ fromGeneratingMatrix g' = LinearCode n k g h
         LT -> compl xs (y:ys)
         EQ -> compl xs ys
         GT -> y : compl (x:xs) ys
+
+
+matrixFromPolynomial :: Int -> V.Vector Binary -> Matrix Binary
+matrixFromPolynomial n v = matrix k n gg
+  where
+    k  = n - V.length v + 1
+    v' = V.generate n gf
+    gv = V.fromList $ go k v'
+
+    go i v
+      | i == 0    = []
+      | otherwise = v : go (i - 1) (step v)
+
+    step v = V.generate n (gs v)
+
+    gf i
+      | i < V.length v = v V.! i
+      | otherwise      = 0
+
+    gs u i
+      | i == 0    = 0
+      | otherwise = u V.! (i - 1)
+
+    gg (i, j) = gv V.! (i - 1) V.! (j - 1)
+
+
+dividePolynomial :: V.Vector Binary -> V.Vector Binary -> V.Vector Binary
+dividePolynomial q r
+    | n == m && q' == r'            = V.fromList [1]
+    | n < m && q' == V.fromList [0] = V.fromList [0]
+    | n < m                         = error "non-divisible polynomials"
+    | otherwise                     = expand (n - m + 1) $ nq `dividePolynomial` r
+  where
+    q' = cut q
+    r' = cut r
+
+    n = V.length q'
+    m = V.length r'
+
+    nq = q' .-. move (n - m) r'
+
+    cut v = V.generate (pos (V.length v - 1) + 1) (v V.!)
+      where
+        pos k
+          | k == 0       = 0
+          | v V.! k == 0 = pos (k - 1)
+          | otherwise    = k
+
+    expand n v = V.generate n gg
+      where
+        gg i
+          | i < V.length v = v V.! i
+          | i == n - 1     = 1
+          | otherwise      = 0
+
+    move k v = V.generate (k + V.length v) gg
+      where
+        gg i
+          | i < k     = 0
+          | otherwise = v V.! (i - k)
+
+
+fromPolynomial :: Int -> V.Vector Binary -> LinearCode
+fromPolynomial n v = LinearCode n k g h
+  where
+    k = n - V.length v + 1
+    g = matrixFromPolynomial n v
+    h = matrixFromPolynomial n $ V.reverse iv
+
+    p = V.generate (n + 1) (\i -> bv $ i == 0 || i == n)
+    iv = p `dividePolynomial` v
+
+    bv False = 0
+    bv True  = 1

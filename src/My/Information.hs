@@ -2,16 +2,21 @@ module My.Information (
   Information(..),
   isInformation,
   tryDecodeByInformation,
-  decodeByInformations
+  decodeByInformations,
+  buildInformations
 ) where
 
 
+import Data.List (sort)
 import Data.Matrix
 import My.Code
 import My.MatrixUtil
 
+import qualified Data.Vector as V
+
 
 newtype Information = Information { getInformation :: [Int] }
+  deriving (Eq, Ord, Show)
 
 
 isInformation :: LinearCode -> Information -> Bool
@@ -37,3 +42,46 @@ decodeByInformations is g m = foldr1 combine attempts
       where
         dx = x `hammingDistance` CodeVector (getMessage m)
         dy = y `hammingDistance` CodeVector (getMessage m)
+
+
+buildInformations :: Int -> LinearCode -> [Information]
+buildInformations k g = foldr add [] errorVectors
+  where
+    gm = generatingMatrix g
+    n = codeLength g
+
+    add ev ans
+      | 0 `elem` map (vscalar ev . ivec) ans = ans
+      | otherwise = buildNew ev : ans
+
+    buildNew ev = Information $ reverse $ go 0 []
+      where
+        go k ans
+          | k == n = ans
+          | ev V.! k == 1 = go (k + 1) ans
+          | null ans = go (k + 1) (k:ans)
+          | rank (columnSubmatrix (k:ans) gm) == length ans + 1 = go (k + 1) (k:ans)
+          | otherwise = go (k + 1) ans
+
+    ivec (Information i) = V.fromList $ go 0 is
+      where
+        go i []
+          | i == n    = []
+          | otherwise = 0 : go (i + 1) []
+        go i (x:xs)
+          | i == x    = 0 : go (i + 1) xs
+          | otherwise = 1 : go (i + 1) (x:xs)
+
+        is = sort i
+
+    scalar []     _      = 0
+    scalar _      []     = 0
+    scalar (u:us) (v:vs) = u * v + scalar us vs
+
+    vscalar u v = scalar (V.toList u) (V.toList v)
+
+    errorVectors = map V.fromList $ go k (codeLength g)
+      where
+        go _ 0 = [[]]
+        go 0 n = map (0:) (go 0 (n - 1))
+        go k n = map (0:) (go k (n - 1)) ++ map (1:) (go (k - 1) (n - 1))
