@@ -1,6 +1,8 @@
 module My.Arithmetic (Binary(..), Additive(..), (.*.)) where
 
 
+import Control.Monad.Random (Random(..), genRange)
+
 import qualified Data.Vector as V
 
 
@@ -60,6 +62,20 @@ instance Integral Binary where
 
   toInteger Zero = 0
   toInteger One  = 1
+
+
+instance Random Binary where
+  randomR (l, r) g = (fromBool res, g')
+    where
+      toBool Zero = False
+      toBool One  = True
+
+      (res, g') = randomR (toBool l, toBool r) g
+
+      fromBool False = Zero
+      fromBool True  = One
+
+  random = randomR (Zero, One)
 
 
 class Additive a where

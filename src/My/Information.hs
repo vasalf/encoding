@@ -3,6 +3,7 @@ module My.Information (
   isInformation,
   tryDecodeByInformation,
   decodeByInformations,
+  completeInformations,
   buildInformations
 ) where
 
@@ -44,8 +45,8 @@ decodeByInformations is g m = foldr1 combine attempts
         dy = y `hammingDistance` CodeVector (getMessage m)
 
 
-buildInformations :: Int -> LinearCode -> [Information]
-buildInformations k g = foldr add [] errorVectors
+completeInformations :: Int -> LinearCode -> [Information] -> [Information]
+completeInformations k g i = foldr add i errorVectors
   where
     gm = generatingMatrix g
     n = codeLength g
@@ -69,19 +70,19 @@ buildInformations k g = foldr add [] errorVectors
           | i == n    = []
           | otherwise = 0 : go (i + 1) []
         go i (x:xs)
-          | i == x    = 0 : go (i + 1) xs
-          | otherwise = 1 : go (i + 1) (x:xs)
+          | i == x    = 1 : go (i + 1) xs
+          | otherwise = 0 : go (i + 1) (x:xs)
 
         is = sort i
 
-    scalar []     _      = 0
-    scalar _      []     = 0
-    scalar (u:us) (v:vs) = u * v + scalar us vs
-
-    vscalar u v = scalar (V.toList u) (V.toList v)
+    vscalar u = V.sum . V.zipWith (*) (V.map toInteger u) . V.map toInteger
 
     errorVectors = map V.fromList $ go k (codeLength g)
       where
         go _ 0 = [[]]
         go 0 n = map (0:) (go 0 (n - 1))
         go k n = map (0:) (go k (n - 1)) ++ map (1:) (go (k - 1) (n - 1))
+
+
+buildInformations :: Int -> LinearCode -> [Information]
+buildInformations k g = completeInformations k g []

@@ -1,6 +1,10 @@
 module Main where
 
-import My.Arithmetic
+import Control.Monad (replicateM)
+import Control.Monad.Random (MonadRandom(..))
+
+import My.Arithmetic()
+import My.Channel
 import My.Code
 import My.Information
 
@@ -8,9 +12,9 @@ import qualified Data.Vector as Vector
 
 
 code :: LinearCode
-code = fromPolynomial 30 p
+code = fromPolynomial 31 p
   where
-    p = Vector.fromList [1,0,1,1,0,0,0,1,0,0,1,1,0,1,0,0,1]
+    p = Vector.fromList [1,0,1,0,0,0,1,1,1,1,0,1,1,1,1,1,1]
 
 
 n :: Int
@@ -21,39 +25,66 @@ t :: Int
 t = (codeDistance code - 1) `div` 2
 
 
+channel :: MonadRandom m => Channel m
+channel = manyErrors t
+
+
+shifts :: [Int] -> [[Int]]
+shifts xs = [ [ (x + i) `mod` n | x <- xs ] | i <- [0..n - 1] ]
+
+
 informations :: [Information]
-informations = buildInformations t code
+informations = map Information $ 
+  shifts [0..14] ++
+  shifts ([0..7] ++ [20..26])
 
 
-errorVectors :: Int -> Int -> [Vector.Vector Binary]
-errorVectors n k = map Vector.fromList $ go n k
+errorVectors :: Int -> Int -> [[Int]]
+errorVectors = go 0
   where
-    go 0 _ = [[]]
-    go n 0 = map (0:) $ go (n - 1) 0
-    go n k = map (0:) (go (n - 1) k) ++ map (1:) (go (n - 1) (k - 1))
+    go i n k
+      | i == n    = [[]]
+      | k == 0    = [[]]
+      | otherwise = map (i:) (go (i + 1) n (k - 1)) ++ go (i + 1) n k
 
 
-testMessages :: [(CodeVector, Message)]
-testMessages =
-  [ (c, Message $ getCodeVector c .+. e) | e <- errorVectors n t
-                                         , c <- allCodeVectors code ]
+data TestData = TestData {
+  testInitMessage :: Message,
+  testEncodedVector :: CodeVector,
+  testTransmittedMessage :: Message,
+  testCleanedVector :: CodeVector
+} deriving Show
 
 
-decodedTestMessages :: [(Message, CodeVector, CodeVector)]
-decodedTestMessages =
-  [(m, decodeByInformations informations code m, c) | (c, m) <- testMessages ]
+passed :: TestData -> Bool
+passed d = testEncodedVector d == testCleanedVector d
 
 
-wrongMessages :: [(Message, CodeVector, CodeVector)]
-wrongMessages = filter (\(_, b, c) -> b /= c) decodedTestMessages
+doTests :: MonadRandom m => m [TestData]
+doTests = replicateM 100 test
+  where
+    test = do
+      i <- Message <$> Vector.replicateM (codeRank code) getRandom
+      let e = encode code i
+      tr <- applyChannel channel e
+      let c = decodeByInformations informations code tr
+      return $ TestData i e tr c
+
+
+reportTests :: [TestData] -> [TestData] -> IO ()
+reportTests tests failed
+  | null failed =
+      putStrLn $ "OK: " ++ show (length tests) ++ " tests passed"
+  | otherwise =
+      putStrLn $ "Fail: " ++ show (length failed) ++ " tests failed"
 
 
 main :: IO ()
 main = do
-  print $ generatingMatrix code
-  print $ checkMatrix code
-  print $ codeDistance code
-  print $ all (isInformation code) informations
-  print $ length informations
-  print $ length wrongMessages
-  mapM_ print wrongMessages
+  putStrLn "G = "
+  print (generatingMatrix code)
+  putStrLn $ show (length informations) ++ " informations"
+  tests <- doTests
+  let failed = filter (not . passed) tests
+  reportTests tests failed
+

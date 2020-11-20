@@ -14,15 +14,13 @@ module My.Code (
   fromPolynomial,
 ) where
 
-import Control.Monad (forM, forM_)
-import Control.Monad.ST
+
 import Data.List (sort)
 import Data.Matrix
 import My.Arithmetic
 import My.MatrixUtil
 
-import qualified Data.Vector         as V
-import qualified Data.Vector.Mutable as MV
+import qualified Data.Vector as V
 
 
 data LinearCode = LinearCode {
@@ -70,16 +68,11 @@ codeDistance g = foldr (min . hammingMeasure) (codeLength g) $ drop 1 $ allCodeV
 
 
 encode :: LinearCode -> Message -> CodeVector
-encode g m = CodeVector $ getCol 0 $ generatingMatrix g * colVector (getMessage m)
+encode g m = CodeVector $ getCol 1 $ transpose (generatingMatrix g) * colVector (getMessage m)
 
 
 invPerm :: [Int] -> [Int]
-invPerm xs = runST $ do
-  let xv = V.fromList xs
-  let n  = V.length xv
-  sv <- MV.new n
-  forM_ [0..n - 1] $ \i -> MV.write sv (xv V.! i) i
-  forM  [0..n - 1] $ MV.read sv
+invPerm = map snd . sort . flip zip [0..]
 
 
 fromGeneratingMatrix :: Matrix Binary -> LinearCode
