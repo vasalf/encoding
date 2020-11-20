@@ -73,7 +73,8 @@ doTests = replicateM 100 test
 
 reportTests :: [TestData] -> [TestData] -> IO ()
 reportTests tests failed
-  | null failed =
+  | null failed = do
+      mapM_ print tests
       putStrLn $ "OK: " ++ show (length tests) ++ " tests passed"
   | otherwise =
       putStrLn $ "Fail: " ++ show (length failed) ++ " tests failed"
