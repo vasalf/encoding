@@ -24,6 +24,8 @@ dependencies:
 - matrix
 - vector
 - MonadRandom
+- poly
+- semirings
 
 library:
   source-dirs: src
