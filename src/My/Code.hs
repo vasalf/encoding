@@ -12,6 +12,7 @@ module My.Code (
   encode,
   fromGeneratingMatrix,
   fromPolynomial,
+  dualCode,
 ) where
 
 
@@ -170,3 +171,7 @@ fromPolynomial n v = LinearCode n k g h
 
     bv False = 0
     bv True  = 1
+
+
+dualCode :: LinearCode -> LinearCode
+dualCode (LinearCode n k g h) = LinearCode n (n - k) h g
