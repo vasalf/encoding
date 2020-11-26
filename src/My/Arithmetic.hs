@@ -1,7 +1,9 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module My.Arithmetic (
   Binary(..),
@@ -10,16 +12,14 @@ module My.Arithmetic (
   PrimeFinite,
 ) where
 
-
 import Control.Monad.Random (Random(..))
 import Data.Bifunctor (first)
 import Data.Euclidean (GcdDomain, Euclidean(..))
 import Data.Field (Field(..))
-import Data.Proxy
 import Data.Ratio (numerator, denominator)
 import Data.Semiring (Semiring(..), Ring(..))
-import GHC.TypeLits (Nat, natVal, KnownNat(..))
-
+import GHC.TypeLits (Nat, KnownNat(..))
+import My.TypeUtils (natValue)
 
 import qualified Data.Vector as V
 
@@ -46,16 +46,16 @@ newtype PrimeFinite (n :: Nat) = PrimeFinite Integer
 
 
 instance forall n. KnownNat n => Num (PrimeFinite n) where
-  (PrimeFinite a) + (PrimeFinite b) = PrimeFinite $ (a + b) `mod` natVal (Proxy :: Proxy n)
-  (PrimeFinite a) * (PrimeFinite b) = PrimeFinite $ (a * b) `mod` natVal (Proxy :: Proxy n)
+  (PrimeFinite a) + (PrimeFinite b) = PrimeFinite $ (a + b) `mod` natValue @n
+  (PrimeFinite a) * (PrimeFinite b) = PrimeFinite $ (a * b) `mod` natValue @n
 
   abs = id
   signum = id
 
-  fromInteger = PrimeFinite . (`mod` natVal (Proxy :: Proxy n))
+  fromInteger = PrimeFinite . (`mod` natValue @n)
 
   negate (PrimeFinite 0) = PrimeFinite 0
-  negate (PrimeFinite x) = PrimeFinite $ natVal (Proxy :: Proxy n) - x
+  negate (PrimeFinite x) = PrimeFinite $ natValue @n - x
 
 
 instance Show (PrimeFinite n) where
@@ -72,7 +72,7 @@ instance KnownNat n => Real (PrimeFinite n) where
 
 instance forall n. KnownNat n => Fractional (PrimeFinite n) where
   recip (PrimeFinite 0) = error "zero division"
-  recip q = q ^ (natVal (Proxy :: Proxy n) - 2)
+  recip q = q ^ (natValue @n - 2)
 
   fromRational q = fromInteger (numerator q) Prelude./ fromInteger (denominator q)
 
@@ -87,7 +87,7 @@ instance forall n. KnownNat n => Random (PrimeFinite n) where
     where
       (x, g') = randomR (toInteger l, toInteger r) g
 
-  random = randomR (0, fromInteger $ natVal (Proxy :: Proxy n) - 1)
+  random = randomR (0, fromInteger $ natValue @n - 1)
 
 
 instance KnownNat n => Additive (PrimeFinite n) where

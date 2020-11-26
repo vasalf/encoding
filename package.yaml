@@ -26,6 +26,7 @@ dependencies:
 - MonadRandom
 - poly
 - semirings
+- containers
 
 library:
   source-dirs: src
