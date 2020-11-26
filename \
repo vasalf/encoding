@@ -465,7 +465,7 @@ newtype SubfieldsTex q ip = SubfieldsTex [Subfield q ip]
 instance (KnownNat q, KnownPoly q ip) => Show (SubfieldsTex q ip) where
   showsPrec _ (SubfieldsTex sfs) =
     showString "Поле & Элементы \\\\ \\hline\\hline \n" .
-    foldr ((.) . showS . sortByIndex) id sfs
+    foldr ((.) . showS) id sfs
       where
         showS (Subfield es n) =
           showString "$GF(" . shows (natValue @q) . showString "^" . shows n . showString ")$ & " .
@@ -478,7 +478,3 @@ instance (KnownNat q, KnownPoly q ip) => Show (SubfieldsTex q ip) where
           maybe (showString "0")
                 (\i -> showString "$\\alpha^{" . shows i . showString "}$")
                 (Map.lookup e rd)
-
-        sortByIndex (Subfield es n) = Subfield ses n
-          where
-            ses = sortBy (\x y -> compare (Map.lookup x rd) (Map.lookup y rd)) es
