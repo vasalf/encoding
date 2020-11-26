@@ -16,6 +16,9 @@ module My.GF (
   elemsReprs,
   zechTable,
   ordTable,
+  minimalPoly,
+  minimalPolyTable,
+  rootsTable,
 ) where
 
 import My.Arithmetic
@@ -188,3 +191,37 @@ ordTable :: forall q ip. (KnownNat q, KnownPoly q ip) => Vector.Vector Int
 ordTable = Vector.fromList $ 1:[ lcm i n `div` i | i <- [1..n - 1] ]
   where
     n = fromInteger $ natValue @q ^ polyDeg @q @ip - 1
+
+
+irreduciblePolys :: forall q. KnownNat q => [P.VPoly (PrimeFinite q)]
+irreduciblePolys = go polys
+  where
+    qv = natValue @q
+    constPolys = [ P.toPoly (Vector.fromList [fromInteger p]) | p <- [0..qv - 1] ]
+    polys = constPolys ++ [ P.X * p + r | p <- polys, r <- constPolys ]
+    go (p:ps) | Vector.length (P.unPoly p) < 2 = go ps
+    go (p:ps) = p : filter ((/= 0) . (`Euclidean.rem` p)) (go ps)
+
+
+minimalPolyGF :: forall q ip. (KnownNat q, KnownPoly q ip) => GF q ip -> P.VPoly (GF q ip)
+minimalPolyGF g = head $ filter ((== 0) . (`P.eval` g)) ips
+  where
+    ips = map (P.toPoly . Vector.map (fromCoefs @q @ip . (:[])) . P.unPoly) (irreduciblePolys @q)
+
+
+minimalPoly :: forall q ip. (KnownNat q, KnownPoly q ip) => GF q ip -> P.VPoly (PrimeFinite q)
+minimalPoly = P.toPoly . Vector.map (freeCoef . P.unPoly . gfPoly) . P.unPoly . minimalPolyGF
+  where
+    freeCoef v | Vector.null v = 0
+    freeCoef v = v Vector.! 0
+
+
+minimalPolyTable :: forall q ip. (KnownNat q, KnownPoly q ip) => Vector.Vector (P.VPoly (PrimeFinite q))
+minimalPolyTable = Vector.map (minimalPoly @q @ip) byIndex
+
+
+rootsTable :: forall q ip. (KnownNat q, KnownPoly q ip) => Int -> Vector.Vector [Int]
+rootsTable d = Vector.generate n root
+  where
+    n = fromInteger $ natValue @q ^ polyDeg @q @ip - 1
+    root i = filter ((== i) . (`mod` n) . (* d)) [0..n - 1]
