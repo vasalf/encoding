@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c942f83e8bb349a3ff54878611b849cef486799e8f5e29fdf70801539718a2bd
+-- hash: 292ec35c5667716f32a8bff58c28c9ee8429c3f5e8934bd3946b571aab66c064
 
 name:           encoding-lab01
 version:        0.1.0.0
@@ -30,8 +30,11 @@ library
       My.Arithmetic
       My.Channel
       My.Code
+      My.GF
       My.Information
+      My.Majority
       My.MatrixUtil
+      My.TypeUtils
   other-modules:
       Paths_encoding_lab01
   hs-source-dirs:
@@ -39,7 +42,10 @@ library
   build-depends:
       MonadRandom
     , base >=4.7 && <5
+    , containers
     , matrix
+    , poly
+    , semirings
     , vector
   default-language: Haskell2010
 
@@ -53,7 +59,10 @@ executable encoding-lab01-exe
   build-depends:
       MonadRandom
     , base >=4.7 && <5
+    , containers
     , encoding-lab01
     , matrix
+    , poly
+    , semirings
     , vector
   default-language: Haskell2010
